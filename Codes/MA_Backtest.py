@@ -722,112 +722,6 @@ class MA_Backtester(Base_Functions):
 
         return best_combination
 
-    #Graphs functions
-    def line_graph_subplot(self, df_date, df_date_long, df_date_short, df_date_buy_hold, 
-                        df_date_tsx, df_date_long_tsx, df_date_short_tsx, df_date_buy_hold_tsx,
-                        df_date_sp500, df_date_long_sp500, df_date_short_sp500, df_date_buy_hold_sp500):
-    
-        colors = {
-            "long_short": "blue",
-            "short": "red",
-            "long": "green",
-            "buy_hold": "orange"
-        }
-
-        # Create subplots: 1 row for each dataset
-        fig = make_subplots(
-            rows=3, cols=1, 
-            shared_xaxes=True, 
-            vertical_spacing=0.05,  
-            subplot_titles=('All', 'TSX', 'SP500')
-        )
-
-        # --- All Data ---
-        # Adjust Date
-        nb_days = df_date.height - self.window_size_macd_lt
-        df_date = df_date.tail(nb_days)
-        df_date_short = df_date_short.tail(nb_days)
-        df_date_long = df_date_long.tail(nb_days)
-        df_date_buy_hold = df_date_buy_hold.tail(nb_days)
-
-        fig.add_trace(go.Scatter(
-            x=df_date['Date'], y=df_date['P&L_CAD'], mode='lines',
-            name='Long/Short', line=dict(color=colors["long_short"]), legendgroup="group1"), row=1, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date['Date'], y=df_date_short['P&L_CAD'], mode='lines',
-            name='Short', line=dict(color=colors["short"]), legendgroup="group1"), row=1, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date['Date'], y=df_date_long['P&L_CAD'], mode='lines',
-            name='Long', line=dict(color=colors["long"]), legendgroup="group1"), row=1, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date['Date'], y=df_date_buy_hold['P&L_CAD'], mode='lines',
-            name='Buy & Hold', line=dict(color=colors["buy_hold"]), legendgroup="group1"), row=1, col=1)
-
-        # --- TSX ---
-        # Adjust Date
-        nb_days = df_date_tsx.height - self.window_size_macd_lt
-        df_date_tsx = df_date_tsx.tail(nb_days)
-        df_date_short_tsx = df_date_short_tsx.tail(nb_days)
-        df_date_long_tsx = df_date_long_tsx.tail(nb_days)
-        df_date_buy_hold_tsx = df_date_buy_hold_tsx.tail(nb_days)
-
-        fig.add_trace(go.Scatter(
-            x=df_date_tsx['Date'], y=df_date_tsx['P&L_CAD'], mode='lines',
-            name='Long/Short', line=dict(color=colors["long_short"]), legendgroup="group1", showlegend=False), row=2, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date_tsx['Date'], y=df_date_short_tsx['P&L_CAD'], mode='lines',
-            name='Short', line=dict(color=colors["short"]), legendgroup="group1", showlegend=False), row=2, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date_tsx['Date'], y=df_date_long_tsx['P&L_CAD'], mode='lines',
-            name='Long', line=dict(color=colors["long"]), legendgroup="group1", showlegend=False), row=2, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date_tsx['Date'], y=df_date_buy_hold_tsx['P&L_CAD'], mode='lines',
-            name='Buy & Hold', line=dict(color=colors["buy_hold"]), legendgroup="group1", showlegend=False), row=2, col=1)
-
-        # --- SP500 ---
-        # Adjust Date
-        nb_days = df_date_sp500.height - self.window_size_macd_lt
-        df_date_sp500 = df_date_sp500.tail(nb_days)
-        df_date_short_sp500 = df_date_short_sp500.tail(nb_days)
-        df_date_long_sp500 = df_date_long_sp500.tail(nb_days)
-        df_date_buy_hold_sp500 = df_date_buy_hold_sp500.tail(nb_days)
-
-        fig.add_trace(go.Scatter(
-            x=df_date_sp500['Date'], y=df_date_sp500['P&L_CAD'], mode='lines',
-            name='Long/Short', line=dict(color=colors["long_short"]), legendgroup="group1", showlegend=False), row=3, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date_sp500['Date'], y=df_date_short_sp500['P&L_CAD'], mode='lines',
-            name='Short', line=dict(color=colors["short"]), legendgroup="group1", showlegend=False), row=3, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date_sp500['Date'], y=df_date_long_sp500['P&L_CAD'], mode='lines',
-            name='Long', line=dict(color=colors["long"]), legendgroup="group1", showlegend=False), row=3, col=1)
-        fig.add_trace(go.Scatter(
-            x=df_date_sp500['Date'], y=df_date_buy_hold_sp500['P&L_CAD'], mode='lines',
-            name='Buy & Hold', line=dict(color=colors["buy_hold"]), legendgroup="group1", showlegend=False), row=3, col=1)
-
-        # Update layout
-        fig.update_layout(
-            title='MACD Strategy',
-            template='simple_white',
-            height=900,  
-            showlegend=True,
-            legend=dict(
-                x=1.02,  
-                y=1, 
-                bordercolor="black",
-                borderwidth=1
-            )
-        )
-
-        # Update x-axes format for all subplots
-        fig.update_xaxes(
-            tickmode='linear',
-            dtick='M1',  
-            tickformat='%b %Y'
-        )
-
-        return fig
-
 class BuyAndHold(Base_Functions):
 
     def __init__(self,
@@ -854,7 +748,7 @@ class BuyAndHold(Base_Functions):
 
         df_buy_price = (
             data.group_by("Ticker")
-            .agg(pl.col("Open").head(self.window_size_macd_lt + 1).last().alias("Cost"))
+            .agg(pl.col("Open").head(self.window_size_macd_lt).last().alias("Cost"))
         )
 
         df_buy_hold = data.join(df_buy_price, on="Ticker")
@@ -893,6 +787,14 @@ class BuyAndHold(Base_Functions):
             (pl.col("P&L_Daily_CAD") / pl.col("Cost_CAD")).alias("Returns_Daily")
         )
 
+        df_date = df_date.with_columns(
+            pl.col("Date").rank("dense").over("Exchange").alias("Rank")
+        )
+
+        df_date = df_date.filter(
+            pl.col("Rank") > self.window_size_macd_lt
+        )
+
         #éviter d'avoir des 0 dans la colonne lors d'un cum_prod()
         df_date = df_date.with_columns(
             
@@ -915,13 +817,36 @@ class BuyAndHold(Base_Functions):
 
         return df_date
     
+    def return_by_date_all_exchange(self, df_group_date: pl.DataFrame) -> pl.DataFrame:
+        """
+        Calculate the mean daily return and cumulative total return by date for all exchanges.
+
+        Parameters:
+        df_group_date (pl.DataFrame): A DataFrame containing grouped data by date with a column "Returns_Daily".
+
+        Returns:
+        pl.DataFrame: A DataFrame with the mean daily return and cumulative total return by date.
+        """
+
+        df_date_return = (
+            df_group_date.group_by("Date")
+            .agg(pl.col("Returns_Daily").mean().alias("Mean Return")))
+
+        df_date_return = df_date_return.sort("Date")
+
+        df_date_return = df_date_return.with_columns(
+            ((pl.col("Mean Return") + 1).cum_prod() - 1).alias("Total Return")
+        )
+
+        return df_date_return
+
     def return_sd_buy_hold(self, df_date: pl.DataFrame) -> float:
 
         df_date_return = (
             df_date.group_by("Exchange")
             .agg([
                 ((pl.col("Returns_Daily") + 1).product() - 1).alias("Total Return"),
-                (pl.count("Date") - self.window_size_macd_lt).alias("nb_days")
+                (pl.count("Date")).alias("nb_days")
             ])
         )
 
@@ -936,7 +861,7 @@ class BuyAndHold(Base_Functions):
         )
 
         df_date_sd = df_date.join(df_nb_days, on="Exchange").group_by("Exchange").agg([
-            pl.col("Returns_Daily").tail(pl.col("nb_days").cast(pl.Int64).first()).alias("Returns_Daily"),
+            pl.col("Returns_Daily").alias("Returns_Daily"),
         ])
 
         df_date_sd = df_date_sd.with_columns(
@@ -959,7 +884,7 @@ class BuyAndHold(Base_Functions):
 
         pnl = float(0)
         
-        nb_days = df_date.height - self.window_size_macd_lt
+        nb_days = df_date.height
 
         average_return, sd = self.return_sd_buy_hold(df_date)
 
@@ -1002,3 +927,131 @@ class BuyAndHold(Base_Functions):
         df_stats_buy_hold = self.stats_buy_hold(df_buy_hold_date)
 
         return df_buy_hold, df_buy_hold_date, df_stats_buy_hold, pivot_ticker
+    
+#Graphs functions
+class Graphs(MA_Backtester):
+
+    def __init__(self,
+                 fx_data,
+                 mapping_fx,
+                 training_data,
+                 validation_data,
+                 capital,
+                 window_size_macd_st,
+                 window_size_macd_lt,
+                 rf
+                ):
+        
+        super().__init__(fx_data,
+                 mapping_fx,
+                 training_data, 
+                 validation_data,
+                 capital, 
+                 window_size_macd_st, 
+                 window_size_macd_lt,
+                 rf)
+
+    def line_graph_subplot(self, df_date, df_date_long, df_date_short, df_date_buy_hold, 
+                        df_date_tsx, df_date_long_tsx, df_date_short_tsx, df_date_buy_hold_tsx,
+                        df_date_sp500, df_date_long_sp500, df_date_short_sp500, df_date_buy_hold_sp500):
+
+        colors = {
+            "long_short": "blue",
+            "short": "red",
+            "long": "green",
+            "buy_hold": "orange"
+        }
+
+        # Create subplots: 1 row for each dataset
+        fig = make_subplots(
+            rows=3, cols=1, 
+            shared_xaxes=True, 
+            vertical_spacing=0.05,  
+            subplot_titles=('All', 'TSX', 'SP500')
+        )
+
+        # --- All Data ---
+        # Adjust Date
+        nb_days = df_date.height - self.window_size_macd_lt
+        df_date = df_date.tail(nb_days)
+        df_date_short = df_date_short.tail(nb_days)
+        df_date_long = df_date_long.tail(nb_days)
+        df_date_buy_hold = df_date_buy_hold.tail(nb_days)
+
+        fig.add_trace(go.Scatter(
+            x=df_date['Date'], y=df_date['Time-Weighted Return'], mode='lines',
+            name='Long/Short', line=dict(color=colors["long_short"]), legendgroup="group1"), row=1, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date['Date'], y=df_date_short['Time-Weighted Return'], mode='lines',
+            name='Short', line=dict(color=colors["short"]), legendgroup="group1"), row=1, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date['Date'], y=df_date_long['Time-Weighted Return'], mode='lines',
+            name='Long', line=dict(color=colors["long"]), legendgroup="group1"), row=1, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date['Date'], y=df_date_buy_hold['Total Return'], mode='lines',
+            name='Buy & Hold', line=dict(color=colors["buy_hold"]), legendgroup="group1"), row=1, col=1)
+
+        # --- TSX ---
+        # Adjust Date
+        nb_days = df_date_tsx.height - self.window_size_macd_lt
+        df_date_tsx = df_date_tsx.tail(nb_days)
+        df_date_short_tsx = df_date_short_tsx.tail(nb_days)
+        df_date_long_tsx = df_date_long_tsx.tail(nb_days)
+        df_date_buy_hold_tsx = df_date_buy_hold_tsx.tail(nb_days)
+
+        fig.add_trace(go.Scatter(
+            x=df_date_tsx['Date'], y=df_date_tsx['Time-Weighted Return'], mode='lines',
+            name='Long/Short', line=dict(color=colors["long_short"]), legendgroup="group1", showlegend=False), row=2, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date_tsx['Date'], y=df_date_short_tsx['Time-Weighted Return'], mode='lines',
+            name='Short', line=dict(color=colors["short"]), legendgroup="group1", showlegend=False), row=2, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date_tsx['Date'], y=df_date_long_tsx['Time-Weighted Return'], mode='lines',
+            name='Long', line=dict(color=colors["long"]), legendgroup="group1", showlegend=False), row=2, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date_tsx['Date'], y=df_date_buy_hold_tsx['Total Return'], mode='lines',
+            name='Buy & Hold', line=dict(color=colors["buy_hold"]), legendgroup="group1", showlegend=False), row=2, col=1)
+
+        # --- SP500 ---
+        # Adjust Date
+        nb_days = df_date_sp500.height - self.window_size_macd_lt
+        df_date_sp500 = df_date_sp500.tail(nb_days)
+        df_date_short_sp500 = df_date_short_sp500.tail(nb_days)
+        df_date_long_sp500 = df_date_long_sp500.tail(nb_days)
+        df_date_buy_hold_sp500 = df_date_buy_hold_sp500.tail(nb_days)
+
+        fig.add_trace(go.Scatter(
+            x=df_date_sp500['Date'], y=df_date_sp500['Time-Weighted Return'], mode='lines',
+            name='Long/Short', line=dict(color=colors["long_short"]), legendgroup="group1", showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date_sp500['Date'], y=df_date_short_sp500['Time-Weighted Return'], mode='lines',
+            name='Short', line=dict(color=colors["short"]), legendgroup="group1", showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date_sp500['Date'], y=df_date_long_sp500['Time-Weighted Return'], mode='lines',
+            name='Long', line=dict(color=colors["long"]), legendgroup="group1", showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(
+            x=df_date_sp500['Date'], y=df_date_buy_hold_sp500['Total Return'], mode='lines',
+            name='Buy & Hold', line=dict(color=colors["buy_hold"]), legendgroup="group1", showlegend=False), row=3, col=1)
+
+        # Update layout
+        fig.update_layout(
+            title='MACD Strategy',
+            template='simple_white',
+            height=900,  
+            showlegend=True,
+            legend=dict(
+                x=1.02,  
+                y=1, 
+                bordercolor="black",
+                borderwidth=1
+            )
+        )
+
+        # Update x-axes format for all subplots
+        fig.update_xaxes(
+            tickmode='linear',
+            dtick='M1',  
+            tickformat='%b %Y'
+        )
+
+        return fig
