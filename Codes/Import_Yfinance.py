@@ -382,10 +382,12 @@ def main(url_sp: str, url_tsx: str, Input_Daily: str, Input : str, years: int) -
     etf_data = download_data_etfs(tik_etfs_list, start_date, end_date, exchange_map_etfs)
 
     #Write to csv
-    all_data.write_csv(f"{Input_Daily}Stocks_{today}.csv")
-    tik_log.write_csv(f"{Input_Daily}Tik_Log_{today}.csv")
-    fx_data.write_csv(f"{Input_Daily}FX_{today}.csv")
-    etf_data.write_csv(f"{Input_Daily}ETFs_{today}.csv")
+    #all_data.write_csv(f"{Input_Daily}Stocks_{today}.csv")
+    #tik_log.write_csv(f"{Input_Daily}Tik_Log_{today}.csv")
+    #fx_data.write_csv(f"{Input_Daily}FX_{today}.csv")
+    #etf_data.write_csv(f"{Input_Daily}ETFs_{today}.csv")
+
+    return all_data, tik_log, fx_data, etf_data
 
 if __name__ == "__main__":
 
@@ -395,4 +397,4 @@ if __name__ == "__main__":
     URL_TSX = 'https://en.wikipedia.org/wiki/S%26P/TSX_60'
     YEAR = 15
 
-    main(URL_SP, URL_TSX, INPUT_DAILY, INPUT_MAPPING, YEAR)
+    all_data, tik_log, fx_data, etf_data = main(URL_SP, URL_TSX, INPUT_DAILY, INPUT_MAPPING, YEAR)
