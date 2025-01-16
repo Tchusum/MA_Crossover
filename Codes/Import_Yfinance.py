@@ -6,8 +6,20 @@ import Utils as utils
 import requests
 import certifi
 from io import StringIO
+from pathlib import Path
 
 def import_tik_list(url: str) -> pl.DataFrame:
+    
+    """
+    Imports a list of tickers from a given URL.
+    This function sends a GET request to the specified URL, retrieves the HTML content,
+    and parses it to extract a table of tickers. The table is then converted from a 
+    pandas DataFrame to a Polars DataFrame.
+    Args:
+        url (str): The URL from which to import the ticker list.
+    Returns:
+        pl.DataFrame: A Polars DataFrame containing the list of tickers.
+    """
     
     response = requests.get(url, verify=certifi.where())
     html_content = StringIO(response.text)
@@ -88,7 +100,22 @@ def modify_ticker(tsx60_tickers: pl.DataFrame, sp500_tickers: pl.DataFrame) -> t
     
     return tsx60_tickers, sp500_tickers
 
-def ticker_lists(tsx60_tickers: pl.DataFrame, sp500_tickers: pl.DataFrame, etfs_tickers: pl.DataFrame) -> tuple:	
+def ticker_lists(tsx60_tickers: pl.DataFrame, sp500_tickers: pl.DataFrame, etfs_tickers: pl.DataFrame) -> tuple:
+
+    """
+    Extracts ticker symbols from given DataFrames and returns them as lists.
+
+    Args:
+        tsx60_tickers (pl.DataFrame): DataFrame containing TSX 60 ticker symbols.
+        sp500_tickers (pl.DataFrame): DataFrame containing S&P 500 ticker symbols.
+        etfs_tickers (pl.DataFrame): DataFrame containing ETF ticker symbols.
+
+    Returns:
+        tuple: A tuple containing three lists:
+            - List of TSX 60 ticker symbols.
+            - List of S&P 500 ticker symbols.
+            - List of ETF ticker symbols.
+    """
 
     tik_sp500_list = sp500_tickers['Symbol'].to_list()
     tik_tsx_list = tsx60_tickers['Symbol'].to_list()
@@ -96,7 +123,8 @@ def ticker_lists(tsx60_tickers: pl.DataFrame, sp500_tickers: pl.DataFrame, etfs_
 
     return tik_tsx_list, tik_sp500_list, tik_etfs_list
 
-def exchange_map_stock(tik_sp500: list, tik_tsx: list) -> dict:	
+def exchange_map_stock(tik_sp500: list, tik_tsx: list) -> dict:
+
     """
     Creates a mapping of ticker symbols to their respective exchanges.
     Args:
@@ -111,13 +139,22 @@ def exchange_map_stock(tik_sp500: list, tik_tsx: list) -> dict:
 
     return exchange_map
 
-def exchange_map_etf(etfs_tickers: pl.DataFrame) -> dict:	
+def exchange_map_etf(etfs_tickers: pl.DataFrame) -> dict:
+
+    """
+    Maps ETF tickers to their respective exchanges.
+    Args:
+        etfs_tickers (pl.DataFrame): A DataFrame containing ETF tickers and their corresponding exchanges.
+    Returns:
+        dict: A dictionary where the keys are ETF tickers and the values are the corresponding exchanges.
+    """
  
     exchange_map_etfs = {row[0]: row[1] for row in etfs_tickers.iter_rows()}
 
     return exchange_map_etfs
 
 def format_date_to_utf8(df: pl.DataFrame) -> pl.DataFrame:
+
     """
     Formats the 'Date' column of a DataFrame to a UTF-8 string in the format YYYYMMDD.
     Parameters:
@@ -136,6 +173,7 @@ def format_date_to_utf8(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 def format_utf8_to_date(data: pl.DataFrame) -> pl.DataFrame:
+
     """
     Converts the 'Date' column in the given DataFrame from UTF-8 string format to Date format.
     Args:
@@ -154,6 +192,7 @@ def format_utf8_to_date(data: pl.DataFrame) -> pl.DataFrame:
     return data
 
 def format_ticker_log(Good_Tik: list, Bad_Tik: list) -> pl.DataFrame:
+
     """
     Formats two lists of tickers into a DataFrame with equal length columns.
     Parameters:
@@ -175,6 +214,7 @@ def format_ticker_log(Good_Tik: list, Bad_Tik: list) -> pl.DataFrame:
     return tik_log
      
 def download_data_stocks(tik_list: list, start_date: datetime, end_date: datetime, exchange_map: dict) -> tuple:
+
     """
     Downloads historical stock data for a list of tickers within a specified date range.
     Args:
@@ -228,6 +268,7 @@ def download_data_stocks(tik_list: list, start_date: datetime, end_date: datetim
     return all_data, tik_log
 
 def download_data_fx(currency_tik: str, currency_mapping: str, start_date: datetime, end_date: datetime) -> pl.DataFrame:
+
     """
     Downloads foreign exchange data for a given currency and date range from Yahoo Finance.
     Args:
@@ -262,6 +303,20 @@ def download_data_fx(currency_tik: str, currency_mapping: str, start_date: datet
     return fx_data
 
 def download_data_etfs(tik_etfs_list: list, start_date: datetime, end_date: datetime, exchange_map: dict ) -> pl.DataFrame:
+
+    """
+    Downloads historical data for a list of ETFs from Yahoo Finance and returns it as a Polars DataFrame.
+
+    Args:
+        tik_etfs_list (list): List of ETF ticker symbols to download data for.
+        start_date (datetime): The start date for the historical data.
+        end_date (datetime): The end date for the historical data.
+        exchange_map (dict): A dictionary mapping ETF ticker symbols to their respective exchanges.
+
+    Returns:
+        pl.DataFrame: A Polars DataFrame containing the historical data for the specified ETFs, 
+                        including columns for Date, Close, Open, Ticker, and Exchange.
+    """
 
     all_etf_data = []
 
@@ -329,16 +384,7 @@ def split_data_exchange(data: pl.DataFrame) -> tuple:
     return sp500_data, tsx_data
 
 def main(url_sp: str, url_tsx: str, Input_Daily: str, Input : str, years: int) -> None:
-    """
-    Main function to import and process stock data from given URLs.
-    Args:
-        url_sp (str): URL to import S&P 500 tickers.
-        url_tsx (str): URL to import TSX 60 tickers.
-        Input (str): Input directory path for saving the output CSV files.
-        years (int): Number of years of historical data to download.
-    Returns:
-        None
-    """
+
     #Fix date
     dates_class = utils.Dates(years)
     today = dates_class.today_str()
@@ -364,7 +410,7 @@ def main(url_sp: str, url_tsx: str, Input_Daily: str, Input : str, years: int) -
     tsx60_tickers, sp500_tickers = modify_ticker(tsx60_tickers, sp500_tickers)
 
     #---ETFs---
-    etfs_tickers = utils.read_csv(f"{Input}ETFs.csv")
+    etfs_tickers = utils.read_csv(f"{Input}/ETFs.csv")
 
     #Ticker list
     tik_tsx_list, tik_sp500_list, tik_etfs_list = ticker_lists(tsx60_tickers, sp500_tickers, etfs_tickers)
@@ -382,19 +428,18 @@ def main(url_sp: str, url_tsx: str, Input_Daily: str, Input : str, years: int) -
     etf_data = download_data_etfs(tik_etfs_list, start_date, end_date, exchange_map_etfs)
 
     #Write to csv
-    #all_data.write_csv(f"{Input_Daily}Stocks_{today}.csv")
-    #tik_log.write_csv(f"{Input_Daily}Tik_Log_{today}.csv")
-    #fx_data.write_csv(f"{Input_Daily}FX_{today}.csv")
-    #etf_data.write_csv(f"{Input_Daily}ETFs_{today}.csv")
-
-    return all_data, tik_log, fx_data, etf_data
+    all_data.write_csv(f"{Input_Daily}/Stocks_{today}.csv")
+    tik_log.write_csv(f"{Input_Daily}/Tik_Log_{today}.csv")
+    fx_data.write_csv(f"{Input_Daily}/FX_{today}.csv")
+    etf_data.write_csv(f"{Input_Daily}/ETFs_{today}.csv")
 
 if __name__ == "__main__":
 
-    INPUT_DAILY = '/Users/alexandrechisholm/Library/Mobile Documents/com~apple~CloudDocs/Trading/MA_Crossover/Input/Daily_Data/'
-    INPUT_MAPPING = '/Users/alexandrechisholm/Library/Mobile Documents/com~apple~CloudDocs/Trading/MA_Crossover/Input/Mapping/'
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    INPUT_DAILY = BASE_DIR / "Input/Daily_Data/"
+    INPUT_MAPPING = BASE_DIR / "Input/Mapping/"
     URL_SP = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    URL_TSX = 'https://en.wikipedia.org/wiki/S%26P/TSX_60'
+    URL_TSX = 'https://en.wikipedia.org/wiki/S%26P/TSX_60'  
     YEAR = 15
 
-    all_data, tik_log, fx_data, etf_data = main(URL_SP, URL_TSX, INPUT_DAILY, INPUT_MAPPING, YEAR)
+    main(URL_SP, URL_TSX, INPUT_DAILY, INPUT_MAPPING, YEAR)

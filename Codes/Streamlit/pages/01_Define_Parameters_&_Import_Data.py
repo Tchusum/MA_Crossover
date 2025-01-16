@@ -1,4 +1,10 @@
 import streamlit as st
+from pathlib import Path
+import sys
+
+PATH_PYTHON = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(PATH_PYTHON))
+import Import_Yfinance as yf_data
 
 WINDOW_SIZE_MACD_ST = st.slider("Select Short Window", 1, 50, 5)
 
@@ -12,13 +18,25 @@ RF = st.number_input("Define Risk-Free Rate", min_value=0.00, max_value=1.00, va
 
 CAPITAL = st.number_input("Define Capital per Trade", min_value=50, max_value=10000, value=200, step=50)
 
-if st.button("Save Parameters"):
+if st.button("Import"):
+    
+    #Save parameters
     st.session_state["WINDOW_SIZE_MACD_ST"] = WINDOW_SIZE_MACD_ST 
     st.session_state["WINDOW_SIZE_MACD_LT"] = WINDOW_SIZE_MACD_LT
     st.session_state["YEARS"] = YEARS
     st.session_state["CUTOFF_DATE"] = CUTOFF_DATE
     st.session_state["RF"] = RF
     st.session_state["CAPITAL"] = CAPITAL
-    st.success("Successfully saved parameters")
+
+    # Import Yahoo Finance Data
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+    INPUT_DAILY = BASE_DIR / "Input/Daily_Data/"
+    INPUT_MAPPING = BASE_DIR / "Input/Mapping/"
+    URL_SP = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+    URL_TSX = 'https://en.wikipedia.org/wiki/S%26P/TSX_60'  
+
+    yf_data.main(URL_SP, URL_TSX, INPUT_DAILY, INPUT_MAPPING, YEARS)
+
+    st.success("Successfully Imported Data")
 
 
