@@ -13,6 +13,21 @@ class Base_Functions():
 
     def add_fx(self, data: pl.DataFrame) -> pl.DataFrame:
 
+        """
+        Adds foreign exchange (FX) data to the given DataFrame.
+
+        This method joins the provided DataFrame with FX mapping and FX data based on 
+        the 'Exchange', 'Date', and 'Currency' columns. It fills any null values in 
+        the 'Close_right' column with 1 and renames it to 'Close_fx'. Additionally, 
+        it excludes certain columns from the final DataFrame.
+
+        Parameters:
+        data (pl.DataFrame): The input DataFrame containing trading data.
+
+        Returns:
+        pl.DataFrame: The DataFrame with added FX data and selected columns.
+        """
+
         data = data.join(self.mapping_fx, on="Exchange", how="left")
 
         data = data.join(self.fx_data, on=["Date", "Currency"], how="left")
@@ -31,64 +46,64 @@ class Base_Functions():
     def df_ticker(self, data: pl.DataFrame) -> pl.DataFrame:
 
         """
-        Aggregates the given DataFrame by the 'Ticker' column and returns the last 'P&L_CAD' value for each ticker.
+        Aggregates and sorts the provided DataFrame by the 'Ticker' column.
+
+        This method groups the input DataFrame by the 'Ticker' column, 
+        aggregates the last value of the 'P&L_CAD' column for each group, 
+        and then sorts the resulting DataFrame in descending order based on 'P&L_CAD'.
+
         Args:
-            data (pl.DataFrame): The input DataFrame containing at least 'Ticker' and 'P&L_CAD' columns.
+            data (pl.DataFrame): The input DataFrame containing 'Ticker' and 'P&L_CAD' columns.
+
         Returns:
-            pl.DataFrame: A DataFrame with each unique 'Ticker' and its corresponding last 'P&L_CAD' value.
+            pl.DataFrame: A DataFrame with 'Ticker' and aggregated 'P&L_CAD' columns, sorted by 'P&L_CAD' in descending order.
         """
 
         pivot_ticker = data.group_by("Ticker").agg([
             pl.last("P&L_CAD").alias("P&L_CAD")
         ])
 
+        pivot_ticker = pivot_ticker.sort("P&L_CAD")
+
         return pivot_ticker
     
-    def stats_df_combine(self, df_stats: pl.DataFrame, df_stats_long: pl.DataFrame, df_stats_short: pl.DataFrame,
-                        df_stats_tsx: pl.DataFrame, df_stats_long_tsx: pl.DataFrame, df_stats_short_tsx: pl.DataFrame,
-                        df_stats_sp500: pl.DataFrame, df_stats_long_sp500: pl.DataFrame, df_stats_short_sp500: pl.DataFrame,
-                        df_stats_buy_hold: pl.DataFrame, df_stats_buy_hold_tsx: pl.DataFrame, df_stats_buy_hold_sp500: pl.DataFrame) -> pl.DataFrame:
+    def stats_df_combine(self, dfs: dict) -> pl.DataFrame:
         
         """
-        Combine the statistics DataFrames for different set-up into a single DataFrame.
-        Parameters:
-        df_stats (pl.DataFrame): The DataFrame containing the statistics for the main data.
-        df_stats_long (pl.DataFrame): The DataFrame containing the statistics for the long trades.
-        df_stats_short (pl.DataFrame): The DataFrame containing the statistics for the short trades.
-        df_stats_tsx (pl.DataFrame): The DataFrame containing the statistics for the TSX data.
-        df_stats_long_tsx (pl.DataFrame): The DataFrame containing the statistics for the long trades on the TSX data.
-        df_stats_short_tsx (pl.DataFrame): The DataFrame containing the statistics for the short trades on the TSX data.
-        df_stats_sp500 (pl.DataFrame): The DataFrame containing the statistics for the SP500 data.
-        df_stats_long_sp500 (pl.DataFrame): The DataFrame containing the statistics for the long trades on the SP500 data.
-        df_stats_short_sp500 (pl.DataFrame): The DataFrame containing the statistics for the short trades on the SP500 data.
-        df_stats_buy_hold (pl.DataFrame): The DataFrame containing the statistics for the buy and hold strategy on the main data.
-        df_stats_buy_hold_tsx (pl.DataFrame): The DataFrame containing the statistics for the buy and hold strategy on the TSX data.
-        df_stats_buy_hold_sp500 (pl.DataFrame): The DataFrame containing the statistics for the buy and hold strategy on the SP500 data.
+        Combines multiple DataFrames containing strategy statistics into a single DataFrame.
+        Args:
+            dfs (dict): A dictionary where keys are labels and values are DataFrames containing 
+                        strategy statistics.
         Returns:
-        pl.DataFrame: The combined DataFrame containing the statistics for all the different set-ups.
+            pl.DataFrame: A combined DataFrame with an additional "Strategy" column indicating 
+                          the label of each strategy.
+        The combined DataFrame includes the following columns:
+            - "Strategy": The label of the strategy.
+            - "Log_Annualized_Return": The log annualized return of the strategy.
+            - "Standard_Deviation": The standard deviation of the strategy's returns.
+            - "Sharpe_Ratio": The Sharpe ratio of the strategy.
+            - "Total P&L_CAD": The total profit and loss in CAD.
+            - "Number of Days": The number of days the strategy was active.
         """
-        df_stats = df_stats.with_columns(pl.lit("All Data - Long/Short").alias("Strategy"))
-        df_stats_long = df_stats_long.with_columns(pl.lit("All Data - Long").alias("Strategy"))
-        df_stats_short = df_stats_short.with_columns(pl.lit("All Data - Short").alias("Strategy"))
-        df_stats_tsx = df_stats_tsx.with_columns(pl.lit("TSX - Long/Short").alias("Strategy"))
-        df_stats_long_tsx = df_stats_long_tsx.with_columns(pl.lit("TSX - Long").alias("Strategy"))
-        df_stats_short_tsx = df_stats_short_tsx.with_columns(pl.lit("TSX - Short").alias("Strategy"))
-        df_stats_sp500 = df_stats_sp500.with_columns(pl.lit("SP500 - Long/Short").alias("Strategy"))
-        df_stats_long_sp500 = df_stats_long_sp500.with_columns(pl.lit("SP500 - Long").alias("Strategy"))
-        df_stats_short_sp500 = df_stats_short_sp500.with_columns(pl.lit("SP500 - Short").alias("Strategy"))
-        df_stats_buy_hold = df_stats_buy_hold.with_columns(pl.lit("All Data - Buy & Hold ").alias("Strategy"))
-        df_stats_buy_hold_tsx = df_stats_buy_hold_tsx.with_columns(pl.lit("TSX - Buy & Hold ").alias("Strategy"))
-        df_stats_buy_hold_sp500 = df_stats_buy_hold_sp500.with_columns(pl.lit("SP500 - Buy & Hold ").alias("Strategy"))
 
-        df_stats_combine = pl.concat([
-            df_stats, df_stats_long, df_stats_short,
-            df_stats_tsx, df_stats_long_tsx, df_stats_short_tsx,
-            df_stats_sp500, df_stats_long_sp500, df_stats_short_sp500,
-            df_stats_buy_hold, df_stats_buy_hold_tsx, df_stats_buy_hold_sp500
-        ])  
-
+        processed_dfs = [
+            df.with_columns(pl.lit(label).alias("Strategy"))
+            for label, df in dfs.items()
+        ]
+        
+        df_stats_combine = pl.concat(processed_dfs)
+        
+        df_stats_combine = df_stats_combine.select([
+            "Strategy",
+            "Log_Annualized_Return",
+            "Standard_Deviation",
+            "Sharpe_Ratio",
+            "Total P&L_CAD",
+            "Number of Days"
+        ])
+        
         return df_stats_combine
-
+    
 class MA_Backtester(Base_Functions):
 
     def __init__(self,
@@ -133,6 +148,7 @@ class MA_Backtester(Base_Functions):
 
     #Complete DF functions
     def ema(self, data: pl.DataFrame) -> pl.DataFrame:
+
         """
         Calculate the Exponential Moving Average (EMA) for the given data.
         This method adds two new columns to the input DataFrame:
@@ -154,6 +170,7 @@ class MA_Backtester(Base_Functions):
         return data
     
     def macd(self, data: pl.DataFrame) -> pl.DataFrame:
+
         """
         Calculate the Moving Average Convergence Divergence (MACD) for the given data.
         Parameters:
@@ -169,6 +186,7 @@ class MA_Backtester(Base_Functions):
         return data
 
     def signal(self, data: pl.DataFrame) -> pl.DataFrame:
+
         """
         Generates trading signals based on the Moving Average Convergence Divergence (MACD) indicator.
         This method adds a 'Signal' column to the provided DataFrame, where:
@@ -193,6 +211,30 @@ class MA_Backtester(Base_Functions):
         return data
     
     def trade(self, data: pl.DataFrame , type: str  = None) -> tuple:
+        def trade(self, data: pl.DataFrame, type: str = None) -> tuple:
+            """
+            Executes trades based on the provided signals and returns the updated data and trade details.
+            Parameters:
+            data (pl.DataFrame): The input data containing trading signals and other relevant columns.
+            type (str, optional): The type of trade to execute. Can be 'long', 'short', or None. Defaults to None.
+            Returns:
+            tuple: A tuple containing the updated data (pl.DataFrame) with trade details and a DataFrame (pl.DataFrame) 
+                   containing detailed trade information.
+            The function performs the following steps:
+            1. Adds a 'Trade_open' column to the data based on the trading signals.
+            2. Initializes lists to keep track of trades, costs, and cumulative sums.
+            3. Iterates through the data rows to execute trades based on the signals and the specified trade type.
+            4. Updates the trade details and cumulative sums accordingly.
+            5. Adds the trade details to the data.
+            6. Returns the updated data and a DataFrame containing detailed trade information.
+            The returned DataFrame contains the following columns:
+            - Ticker: The ticker symbol of the traded asset.
+            - Buy_Price: The price at which the asset was bought.
+            - Sell_Price: The price at which the asset was sold.
+            - Quantity: The quantity of the asset traded.
+            - Trade_Date_open: The date when the trade was opened.
+            - Trade_Date_close: The date when the trade was closed.
+            """
         
         data = data.with_columns([
             pl.when((pl.col('Signal').shift(1) == 1) & (pl.col('Ticker').shift(1) == pl.col('Ticker')))
@@ -313,6 +355,7 @@ class MA_Backtester(Base_Functions):
         return data, trade_df
 
     def cf(self, data: pl.DataFrame) -> pl.DataFrame:
+
         """
         Calculate the cumulative cash flow for each ticker in the given DataFrame.
         Args:
@@ -334,6 +377,24 @@ class MA_Backtester(Base_Functions):
         return data
 
     def realized_pnl(self, trade_df: pl.DataFrame, data: pl.DataFrame) -> pl.DataFrame:
+
+        """
+        Calculate the realized profit and loss (P&L) for trades and update the main data with cumulative realized P&L.
+
+        Args:
+            trade_df (pl.DataFrame): A DataFrame containing trade information with columns:
+                - "Sell_Price": The price at which the asset was sold.
+                - "Buy_Price": The price at which the asset was bought.
+                - "Quantity": The quantity of the asset traded.
+                - "Ticker": The ticker symbol of the asset.
+                - "Trade_Date_close": The date when the trade was closed.
+            data (pl.DataFrame): The main DataFrame containing market data with columns:
+                - "Ticker": The ticker symbol of the asset.
+                - "Date": The date of the market data.
+
+        Returns:
+            pl.DataFrame: The updated main DataFrame with an additional column "Realized_P&L" representing the cumulative realized P&L for each ticker.
+        """
 
         #remove rows with null values in Sell_Price
         #these trades are not closed
@@ -361,6 +422,16 @@ class MA_Backtester(Base_Functions):
 
     def position_value(self, data: pl.DataFrame) -> pl.DataFrame:
 
+        """
+        Calculate the value of the position based on the closing price.
+
+        Args:
+            data (pl.DataFrame): A Polars DataFrame containing at least the columns "Position" and "Close".
+
+        Returns:
+            pl.DataFrame: A Polars DataFrame with an additional column "Position_Value" which is the product of "Position" and "Close".
+        """
+
         data = data.with_columns([
             (pl.col("Position") * pl.col("Close")).alias("Position_Value")
         ])
@@ -369,21 +440,42 @@ class MA_Backtester(Base_Functions):
 
     def unrealized_pnl(self, data: pl.DataFrame) -> pl.DataFrame:
             
-            data = data.with_columns([
-                pl.when(pl.col("Position") > 0)
-                .then(-1)
-                .otherwise(1)
-                .alias("long/short")
+        """
+        Calculate the unrealized profit and loss (P&L) for each position in the given DataFrame.
+        Args:
+            data (pl.DataFrame): A DataFrame containing trading data with columns "Position", "Position_Value", and "Cost".
+        Returns:
+            pl.DataFrame: A DataFrame with an additional column "Unrealized_P&L" representing the unrealized profit and loss for each position.
+        """
+        
+        data = data.with_columns([
+            pl.when(pl.col("Position") > 0)
+            .then(-1)
+            .otherwise(1)
+            .alias("long/short")
 
-            ])           
-            
-            data = data.with_columns([
-                (pl.col("Position_Value") + pl.col("Cost") * pl.col("long/short")).alias("Unrealized_P&L")
-            ])
-    
-            return data
+        ])           
+        
+        data = data.with_columns([
+            (pl.col("Position_Value") + pl.col("Cost") * pl.col("long/short")).alias("Unrealized_P&L")
+        ])
+
+        return data
     
     def pnl(self, data: pl.DataFrame) -> pl.DataFrame:
+
+        """
+        Calculate the daily and cumulative profit and loss (P&L) for the given data.
+
+        Args:
+            data (pl.DataFrame): A Polars DataFrame containing at least the columns "Realized_P&L", 
+                                 "Unrealized_P&L", and "Ticker".
+
+        Returns:
+            pl.DataFrame: A Polars DataFrame with additional columns:
+                          - "P&L": The cumulative profit and loss.
+                          - "P&L_Daily": The daily profit and loss.
+        """
 
         data = data.with_columns([
             ((pl.col("Realized_P&L") + pl.col("Unrealized_P&L"))).alias("P&L")
@@ -406,6 +498,20 @@ class MA_Backtester(Base_Functions):
     
     def cost_input_return(self, data: pl.DataFrame) -> pl.DataFrame:
 
+        """
+        Calculate the cost input return for each row in the given DataFrame.
+
+        This method adds a new column "Cost_Input_Return" to the DataFrame, which is calculated as follows:
+        - If the "Trade" column value is not 0, the "Cost_Input_Return" is the sum of the current "Cost" and the previous row's "Cost".
+        - Otherwise, the "Cost_Input_Return" is the same as the current "Cost".
+
+        Parameters:
+        data (pl.DataFrame): The input DataFrame containing at least the columns "Trade" and "Cost".
+
+        Returns:
+        pl.DataFrame: The DataFrame with the additional "Cost_Input_Return" column.
+        """
+
         data = data.with_columns([
 
             pl.when(pl.col("Trade") != 0)
@@ -418,6 +524,16 @@ class MA_Backtester(Base_Functions):
         return data
     
     def cad_conv(self, data: pl.DataFrame) -> pl.DataFrame:
+
+        """
+        Converts various financial metrics from their original currency to CAD using the provided exchange rate.
+
+        Parameters:
+        data (pl.DataFrame): A Polars DataFrame containing the financial metrics and the exchange rate column 'Close_fx'.
+
+        Returns:
+        pl.DataFrame: A new Polars DataFrame with additional columns for each financial metric converted to CAD.
+        """
 
         data = data.with_columns([
             (pl.col("P&L") * pl.col("Close_fx")).alias("P&L_CAD"),
@@ -433,7 +549,8 @@ class MA_Backtester(Base_Functions):
 
         return data
 
-    def select_col_complete(self, data: pl.DataFrame) -> pl.DataFrame:  
+    def select_col_complete(self, data: pl.DataFrame) -> pl.DataFrame:
+
         """
         Select specific columns from the given DataFrame.
         Parameters:
@@ -480,6 +597,21 @@ class MA_Backtester(Base_Functions):
 
     #Date DF functions   
     def df_date(self, data: pl.DataFrame) -> pl.DataFrame:
+
+        """
+        Processes the input DataFrame to compute various financial metrics and returns a new DataFrame with selected columns.
+        Args:
+            data (pl.DataFrame): Input DataFrame containing financial data with columns such as 'Date', 'Cost_Input_Return_CAD', 
+                                 'P&L_Daily_CAD', 'P&L_Daily', 'Currency', 'Close_fx', 'CF', 'Realized_P&L_CAD', and 'Position_Value_CAD'.
+        Returns:
+            pl.DataFrame: A DataFrame with the following columns:
+                - 'Date': The date of the record.
+                - 'P&L_Daily_CAD': The daily profit and loss in CAD.
+                - 'P&L_CAD': The cumulative profit and loss in CAD.
+                - 'Position_Value_CAD': The position value in CAD.
+                - 'HPR_Daily': The daily holding period return.
+                - 'Time-Weighted Return': The time-weighted return.
+        """
 
         df_date = data.group_by("Date").agg([
             pl.col("Cost_Input_Return_CAD").sum().alias("Cost_Input_Return_CAD"),
@@ -537,13 +669,15 @@ class MA_Backtester(Base_Functions):
             (pl.col("Total Return_plus1") - 1).alias("Time-Weighted Return")
         ])
 
+        #Enlever les premieres dates qui n'ont pas de trades
+        df_date = df_date.slice(self.window_size_macd_lt, df_date.shape[0] - self.window_size_macd_lt)
+
         #Select Cols
         df_date = df_date.select([
             'Date',
             'P&L_Daily_CAD',
             'P&L_CAD',
             'Position_Value_CAD',
-            'Cost_Input_Return_CAD',
             'HPR_Daily',
             'Time-Weighted Return'
         ])
@@ -552,6 +686,15 @@ class MA_Backtester(Base_Functions):
     
     #Stats functions
     def pnl_total_cad(self, df_ticker: pl.DataFrame) -> float:
+
+        """
+        Calculate the total profit and loss (P&L) in CAD from the given DataFrame.
+        Args:
+            df_ticker (pl.DataFrame): A Polars DataFrame containing a column "P&L_CAD" 
+                                      which represents the profit and loss values in CAD.
+        Returns:
+            float: The total P&L in CAD.
+        """
         
         pnl = df_ticker.select(pl.col("P&L_CAD").sum()).item()
 
@@ -559,11 +702,32 @@ class MA_Backtester(Base_Functions):
     
     def nb_days(self, df_date: pl.DataFrame) -> float:
 
+        """
+        Calculate the number of days based on the provided DataFrame and window size.
+
+        Args:
+            df_date (pl.DataFrame): The input DataFrame containing date information.
+
+        Returns:
+            float: The number of days after subtracting the window size for MACD long-term.
+        """
+
         nb_days = df_date.height - self.window_size_macd_lt
 
         return nb_days
 
     def returns_stats(self, df_date: pl.DataFrame, nb_days: float) -> float:
+
+        """
+        Calculate the annualized return from a given DataFrame of returns over a specified number of days.
+
+        Args:
+            df_date (pl.DataFrame): A Polars DataFrame containing a column "Time-Weighted Return".
+            nb_days (float): The number of days over which the returns are calculated.
+
+        Returns:
+            float: The annualized return.
+        """
 
         total_return = df_date.select(pl.col("Time-Weighted Return")).tail(1).item()
 
@@ -572,6 +736,15 @@ class MA_Backtester(Base_Functions):
         return annualized_return
     
     def sd_stats(self, df_date: pl.DataFrame, nb_days) -> float:
+
+        """
+        Calculate the standard deviation of the 'HPR_Daily' column over the last `nb_days` days.
+        Parameters:
+        df_date (pl.DataFrame): A Polars DataFrame containing at least the 'HPR_Daily' column.
+        nb_days (int): The number of days over which to calculate the standard deviation.
+        Returns:
+        float: The standard deviation of the 'HPR_Daily' column over the specified period.
+        """
 
         df_date = df_date.with_columns(
             pl.col('HPR_Daily').fill_nan(0)
@@ -582,6 +755,22 @@ class MA_Backtester(Base_Functions):
         return sd
 
     def stats(self, df_date: pl.DataFrame, df_ticker: pl.DataFrame, data: pl.DataFrame) -> pl.DataFrame:
+        """
+        Calculate and return various statistical metrics for the given data.
+        Args:
+            df_date (pl.DataFrame): DataFrame containing date-related data.
+            df_ticker (pl.DataFrame): DataFrame containing ticker-related data.
+            data (pl.DataFrame): DataFrame containing the main data for analysis.
+        Returns:
+            pl.DataFrame: DataFrame containing the calculated statistics:
+                - "Total P&L_CAD": Total profit and loss in CAD.
+                - "Annualized_Return": Annualized return.
+                - "Log_Annualized_Return": Logarithm of the annualized return.
+                - "Standard_Deviation": Annualized standard deviation.
+                - "Risk_Free_Rate": Risk-free rate.
+                - "Sharpe_Ratio": Sharpe ratio.
+                - "Number of Days": Number of days in the period.
+        """
 
         nb_days = self.nb_days(df_date)
 
@@ -706,6 +895,22 @@ class MA_Backtester(Base_Functions):
     
     def optimize_parameters(self, window_size_st_range: list, window_size_lt_range: list, training_data: pl.DataFrame) -> tuple:
 
+        """
+        Optimize the parameters for the moving average crossover strategy.
+        This function searches for the best combination of short-term and long-term 
+        window sizes for the moving average crossover strategy by evaluating all 
+        valid combinations within the provided ranges. A combination is considered 
+        valid if the short-term window size is less than the long-term window size.
+        Args:
+            window_size_st_range (list): A list of possible short-term window sizes.
+            window_size_lt_range (list): A list of possible long-term window sizes.
+            training_data (pl.DataFrame): The training data to be used for backtesting.
+        Returns:
+            tuple: A tuple containing the best combination of short-term and long-term 
+                   window sizes as a Polars DataFrame with columns "window_size_st" 
+                   and "window_size_lt".
+        """
+
         valid_combinations = [(st, lt) for st, lt in itertools.product(window_size_st_range, window_size_lt_range) if st < lt]
 
         best_combination = None
@@ -745,6 +950,26 @@ class BuyAndHold(Base_Functions):
             self.validation_data = validation_data
 
     def buy_hold_strategy(self, data: pl.DataFrame) -> pl.DataFrame:
+        
+        """
+        Implements a buy and hold strategy on the provided data.
+
+        Parameters:
+        data (pl.DataFrame): A Polars DataFrame containing the trading data with columns "Ticker", "Open", "Close", and "Close_fx".
+
+        Returns:
+        pl.DataFrame: A Polars DataFrame with the following columns:
+            - "Ticker": The ticker symbol of the stock.
+            - "Open": The opening price of the stock.
+            - "Close": The closing price of the stock.
+            - "Close_fx": The closing price of the stock in CAD.
+            - "Cost": The cost price of the stock.
+            - "P&L": The profit and loss from the buy and hold strategy.
+            - "P&L_Daily": The daily profit and loss.
+            - "P&L_Daily_CAD": The daily profit and loss in CAD.
+            - "P&L_CAD": The total profit and loss in CAD.
+            - "Cost_CAD": The cost price of the stock in CAD.
+        """
 
         df_buy_price = (
             data.group_by("Ticker")

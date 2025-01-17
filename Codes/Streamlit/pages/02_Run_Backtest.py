@@ -147,8 +147,20 @@ if st.button("Run Backtest"):
 
     st.subheader("Statistics")
 
+    #create combine df of stats (Strategy vs Buy & Hold)
+    df_stats_combine = {f"{exchange} / {long_short}": df_stats,
+      f"{exchange} / Buy & Hold": df_stats_buy_hold}
+    
+    df_stats = base_functions.stats_df_combine(df_stats_combine)
+    
     st.dataframe(df_stats)
 
-    
+    st.subheader("P&L by Ticker")
+
+    st.dataframe(pivot_ticker)
+
+    st.subheader("P&L by Date")
+
+    st.dataframe(df_date)
 
     

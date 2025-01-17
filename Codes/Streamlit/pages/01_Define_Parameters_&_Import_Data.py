@@ -18,9 +18,8 @@ RF = st.number_input("Define Risk-Free Rate", min_value=0.00, max_value=1.00, va
 
 CAPITAL = st.number_input("Define Capital per Trade", min_value=50, max_value=10000, value=200, step=50)
 
-if st.button("Import"):
+if st.button("Save Parameters"):
     
-    #Save parameters
     st.session_state["WINDOW_SIZE_MACD_ST"] = WINDOW_SIZE_MACD_ST 
     st.session_state["WINDOW_SIZE_MACD_LT"] = WINDOW_SIZE_MACD_LT
     st.session_state["YEARS"] = YEARS
@@ -28,7 +27,10 @@ if st.button("Import"):
     st.session_state["RF"] = RF
     st.session_state["CAPITAL"] = CAPITAL
 
-    # Import Yahoo Finance Data
+    st.success("Successfully Saved Parameters")
+
+if st.button("Import Data"):
+
     BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
     INPUT_DAILY = BASE_DIR / "Input/Daily_Data/"
     INPUT_MAPPING = BASE_DIR / "Input/Mapping/"
@@ -38,5 +40,3 @@ if st.button("Import"):
     yf_data.main(URL_SP, URL_TSX, INPUT_DAILY, INPUT_MAPPING, YEARS)
 
     st.success("Successfully Imported Data")
-
-
