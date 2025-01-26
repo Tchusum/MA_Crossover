@@ -701,18 +701,18 @@ class MA_Backtester(Base_Functions):
         return pnl
     
     def nb_days(self, df_date: pl.DataFrame) -> float:
-
+        
         """
-        Calculate the number of days based on the provided DataFrame and window size.
+        Calculate the number of days in the given DataFrame.
 
         Args:
-            df_date (pl.DataFrame): The input DataFrame containing date information.
+            df_date (pl.DataFrame): A Polars DataFrame containing date information.
 
         Returns:
-            float: The number of days after subtracting the window size for MACD long-term.
+            float: The number of days (rows) in the DataFrame.
         """
 
-        nb_days = df_date.height - self.window_size_macd_lt
+        nb_days = df_date.height
 
         return nb_days
 
@@ -1277,6 +1277,54 @@ class Graphs(MA_Backtester):
             tickmode='linear',
             dtick='M1',  
             tickformat='%b %Y'
+        )
+
+        return fig
+    
+    def strategy_vs_bh_graph(self, df_date, df_date_buy_hold):
+
+        fig = go.Figure()
+
+        nb_days = df_date.height
+        df_date = df_date.tail(nb_days)
+        df_date_buy_hold = df_date_buy_hold.tail(nb_days)
+
+        fig.add_trace(go.Scatter(
+            x=df_date['Date'], 
+            y=df_date['Time-Weighted Return'], 
+            mode='lines',
+            name='Long/Short', 
+            line=dict(color="blue"), 
+            legendgroup="group1"
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=df_date['Date'], 
+            y=df_date_buy_hold['Total Return'],
+            mode='lines',
+            name='Buy & Hold',
+            line=dict(color="orange"),
+            legendgroup="group1"
+        ))
+
+        fig.update_layout(
+            title='MA Crossover Strategy',
+            template='simple_white',
+            height=900,  
+            showlegend=True,
+            legend=dict(
+                x=1.02,  
+                y=1, 
+                bordercolor="black",
+                borderwidth=1
+            ),
+            yaxis=dict(
+                tickformat=".0%",
+                title="Cumulative Return (%)",
+                showgrid=True,
+                gridcolor='lightgray',
+                gridwidth=1 
+            )
         )
 
         return fig

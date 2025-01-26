@@ -24,7 +24,7 @@ long_short = st.selectbox("Select Strategy", ["Long", "Short", "Long & Short"])
 if st.button("Run Backtest"):
 
     #Dates
-    dates_class = utils.Dates(YEARS)
+    dates_class = utils.Dates
     today = dates_class.today_str()
 
     #Paths
@@ -42,26 +42,26 @@ if st.button("Run Backtest"):
     data_etfs = utils.read_csv(path)
 
     #Format date
-    data_stocks = yf_data.format_utf8_to_date(data_stocks)
-    data_etfs = yf_data.format_utf8_to_date(data_etfs)
+    data_stocks = utils.Dates.format_col_to_date(data_stocks, "Date")
+    data_etfs = utils.Dates.format_col_to_date(data_etfs, "Date")
 
     #Split data by exchange
-    data_stocks_sp500, data_stocks_tsx = yf_data.split_data_exchange(data_stocks)
-    data_etfs_sp500, data_etfs_tsx = yf_data.split_data_exchange(data_etfs)
+    data_stocks_sp500, data_stocks_tsx = yf_data.data.split_data_exchange(data_stocks)
+    data_etfs_sp500, data_etfs_tsx = yf_data.data.split_data_exchange(data_etfs)
 
     #Split data training / validation
-    training_data_stocks, validation_data_stocks = yf_data.split_data_training_validation(data_stocks, CUTOFF_DATE)
-    training_data_stocks_tsx, validation_data_stocks_tsx = yf_data.split_data_training_validation(data_stocks_tsx, CUTOFF_DATE)
-    training_data_stocks_sp500, validation_data_stocks_sp500 = yf_data.split_data_training_validation(data_stocks_sp500, CUTOFF_DATE)
+    training_data_stocks, validation_data_stocks = yf_data.data.split_data_training_validation(data_stocks, CUTOFF_DATE)
+    training_data_stocks_tsx, validation_data_stocks_tsx = yf_data.data.split_data_training_validation(data_stocks_tsx, CUTOFF_DATE)
+    training_data_stocks_sp500, validation_data_stocks_sp500 = yf_data.data.split_data_training_validation(data_stocks_sp500, CUTOFF_DATE)
 
-    training_data_etfs, validation_data_etfs = yf_data.split_data_training_validation(data_etfs, CUTOFF_DATE)
-    training_data_etfs_sp500, validation_data_etfs_sp500 = yf_data.split_data_training_validation(data_etfs_sp500, CUTOFF_DATE)
-    training_data_etfs_tsx, validation_data_etfs_tsx = yf_data.split_data_training_validation(data_etfs_tsx, CUTOFF_DATE)
+    training_data_etfs, validation_data_etfs = yf_data.data.split_data_training_validation(data_etfs, CUTOFF_DATE)
+    training_data_etfs_sp500, validation_data_etfs_sp500 = yf_data.data.split_data_training_validation(data_etfs_sp500, CUTOFF_DATE)
+    training_data_etfs_tsx, validation_data_etfs_tsx = yf_data.data.split_data_training_validation(data_etfs_tsx, CUTOFF_DATE)
 
     #Import FX
     path = f"{INPUT_DAILY}/FX_{today}.csv"
     fx_data = utils.read_csv(path)
-    fx_data = dates_class.format_int64_to_date(fx_data)
+    fx_data = utils.Dates.format_col_to_date(fx_data, "Date")
 
     #Mapping FX
     path = f"{INPUT_MAPPING}/Exchange_Currency.csv"
@@ -96,6 +96,7 @@ if st.button("Run Backtest"):
             buy_and_hold.set_parameters(validation_data = validation_data_etfs)
             data, pivot_ticker, df_date, df_stats, trade_df = macd_backtest.run_strategy( 'long')
             df_buy_hold, df_date_buy_hold, df_stats_buy_hold, pivot_ticker_buy_hold = buy_and_hold.run_buy_hold()
+            df_date_buy_hold = buy_and_hold.return_by_date_all_exchange(df_date_buy_hold)
 
     elif long_short == "Short":
 
@@ -119,6 +120,7 @@ if st.button("Run Backtest"):
             buy_and_hold.set_parameters(validation_data = validation_data_etfs)
             data, pivot_ticker, df_date, df_stats, trade_df = macd_backtest.run_strategy('short')
             df_buy_hold, df_date_buy_hold, df_stats_buy_hold, pivot_ticker_buy_hold = buy_and_hold.run_buy_hold()
+            df_date_buy_hold = buy_and_hold.return_by_date_all_exchange(df_date_buy_hold)
 
     elif long_short == "Long & Short":
 
@@ -142,6 +144,7 @@ if st.button("Run Backtest"):
             buy_and_hold.set_parameters(validation_data = validation_data_etfs)
             data, pivot_ticker, df_date, df_stats, trade_df = macd_backtest.run_strategy()
             df_buy_hold, df_date_buy_hold, df_stats_buy_hold, pivot_ticker_buy_hold = buy_and_hold.run_buy_hold()
+            df_date_buy_hold = buy_and_hold.return_by_date_all_exchange(df_date_buy_hold)
 
     st.success("Backtest completed")
 
@@ -162,5 +165,14 @@ if st.button("Run Backtest"):
     st.subheader("P&L by Date")
 
     st.dataframe(df_date)
+
+    st.subheader("Vs Buy & Hold")
+
+    graphs = MA.Graphs(fx_data, mapping_fx, training_data_stocks, validation_data_stocks, CAPITAL, WINDOW_SIZE_MACD_ST, WINDOW_SIZE_MACD_LT, RF)
+    fig = graphs.strategy_vs_bh_graph(df_date, df_date_buy_hold)
+
+    st.plotly_chart(fig)
+
+
 
     

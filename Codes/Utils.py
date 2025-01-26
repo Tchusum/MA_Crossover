@@ -44,14 +44,10 @@ def export_df_csv(df: pl.DataFrame, path: str) -> None:
         """
         
         df.write_csv(path)
+    
+class Dates():
 
-class Dates:
-
-    def __init__(self, years_lenght: int):
-
-        self.years_lenght = years_lenght
-
-    def today_str(self) -> str:
+    def today_str() -> str:
         """
         Get today's date.
         Returns:
@@ -59,35 +55,59 @@ class Dates:
         """
         return datetime.today().strftime('%Y%m%d')
     
-    def start_date_backtest(self, end_date: datetime) -> datetime:
+    def start_date_backtest(end_date: datetime, years_lenght: datetime) -> datetime:
         """
         Get the start date for the backtest.
         Returns:
             datetime: The start date for the backtest.
         """
-        return end_date.replace(year=end_date.year - self.years_lenght)
+        return end_date.replace(year=end_date.year - years_lenght)
     
-    def end_date_backtest(self) -> datetime:
+    def end_date_backtest() -> datetime:
         
         today = datetime.today()
         end_date = today.date()
 
         return end_date
     
-    def format_int64_to_date(self, data: pl.DataFrame) -> pl.DataFrame:
+    def format_col_to_date(data: pl.DataFrame, col_name: str) -> pl.DataFrame:
         """
-        Converts the 'Date' column in the given DataFrame from Int64 format to Date format.
+        Formats a specified column in a Polars DataFrame to a date format.
+
         Args:
-            data (polars.DataFrame): The input DataFrame containing a 'Date' column in Integer format.
+            data (pl.DataFrame): The input DataFrame containing the column to be formatted.
+            col_name (str): The name of the column to be formatted to date.
+
         Returns:
-            polars.DataFrame: The DataFrame with the 'Date' column converted to Date format.
+            pl.DataFrame: A new DataFrame with the specified column formatted as a date.
         """
 
         data = data.with_columns(
-        pl.col('Date')
+        pl.col(col_name)
         .cast(str)
         .str.strptime(pl.Date, format="%Y%m%d")
-        .alias('Date')
+        .alias(col_name)
+        )
+
+        return data
+    
+    def format_date_utf8(data: pl.DataFrame, col_name: str) -> pl.DataFrame:
+        """
+        Formats the date column in a Polars DataFrame to a UTF-8 string in the format YYYYMMDD.
+
+        Args:
+            data (pl.DataFrame): The input Polars DataFrame containing the date column.
+            col_name (str): The name of the column to format.
+
+        Returns:
+            pl.DataFrame: A new Polars DataFrame with the formatted date column.
+        """
+
+        data = data.with_columns(
+            data[col_name]
+            .dt.strftime("%Y%m%d")
+            .cast(pl.Utf8)
+            .alias(col_name)
         )
 
         return data

@@ -1,6 +1,7 @@
 import Import_Yfinance as yf_data
 import Utils as utils
 import MA_Backtest as MA
+from pathlib import Path
 
 def main():
 
@@ -8,8 +9,14 @@ def main():
     dates_class = utils.Dates(YEARS)
     today = dates_class.today_str()
 
-    #####Import data#####
-    path = f"{PATHS['input_daily_path']}Stocks_{today}.csv"
+    #Paths
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    INPUT_DAILY = BASE_DIR / "Input/Daily_Data/"
+    INPUT_MAPPING = BASE_DIR / "Input/Mapping/"
+    OUTPUT = BASE_DIR / "Output/"
+
+    #Import data
+    path = f"{INPUT_DAILY}/Stocks_{today}.csv"
     data = utils.read_csv(path)
 
     #Format date
@@ -19,12 +26,12 @@ def main():
     training_data, validation_data = yf_data.split_data_training_validation(data, CUTOFF_DATE)
 
     #Import FX
-    path = f"{PATHS['input_daily_path']}FX_{today}.csv"
+    path = f"{INPUT_DAILY}/FX_{today}.csv"
     fx_data = utils.read_csv(path)
     fx_data = dates_class.format_int64_to_date(fx_data)
 
     #Mapping FX
-    path = f"{PATHS['input_mapping']}Exchange_Currency.csv"
+    path = f"{INPUT_MAPPING}/Exchange_Currency.csv"
     mapping_fx = utils.read_csv(path)
 
     tester = MA.MA_Backtester(fx_data, mapping_fx, training_data, validation_data, CAPITAL, WINDOW_SIZE_MACD_ST, WINDOW_SIZE_MACD_LT, RF)
@@ -33,7 +40,7 @@ def main():
     best_comb = tester.optimize_parameters(WINDOW_SIZE_MACD_ST_RANGE, WINDOW_SIZE_MACD_LT_RANGE, training_data)
 
     #Export Data
-    path = f"{PATHS['input_path']}best_comb.csv"
+    path = f"{OUTPUT}/best_comb.csv"
     utils.export_df_csv(best_comb, path)
 
 if __name__ == "__main__":
@@ -47,15 +54,8 @@ if __name__ == "__main__":
     WINDOW_SIZE_MACD_ST = 25
     WINDOW_SIZE_MACD_LT = 25
 
-    PATHS = {
-        "input_path" : '/Users/alexandrechisholm/Library/Mobile Documents/com~apple~CloudDocs/Trading/MA_Crossover/Input/',
-        "input_daily_path" : '/Users/alexandrechisholm/Library/Mobile Documents/com~apple~CloudDocs/Trading/MA_Crossover/Input/Daily_Data/',
-        "input_mapping" : '/Users/alexandrechisholm/Library/Mobile Documents/com~apple~CloudDocs/Trading/MA_Crossover/Input/Mapping/',
-        "output_path" : '/Users/alexandrechisholm/Library/Mobile Documents/com~apple~CloudDocs/Trading/MA_Crossover/Output/'
-    }
-
     #Optimization parameters
     WINDOW_SIZE_MACD_ST_RANGE = range(10, 30, 5)
     WINDOW_SIZE_MACD_LT_RANGE = range(30, 100, 5)
 
-    main( )
+    main(CUTOFF_DATE, YEARS, RF, CAPITAL, WINDOW_SIZE_MACD_ST, WINDOW_SIZE_MACD_LT, WINDOW_SIZE_MACD_ST_RANGE, WINDOW_SIZE_MACD_LT_RANGE)
