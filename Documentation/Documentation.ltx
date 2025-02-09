@@ -1,0 +1,58 @@
+\documentclass[12pt]{article}
+
+% Packages for better formatting and math display
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{amsmath}
+
+% Title and author information
+\title{\vspace{-2cm}Backtesting of a Moving Average Crossover Trading Strategy}
+\author{Alexandre Chisholm}
+\date{}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\maketitle
+
+\section{Definition}
+
+The \textbf{Short-Term Exponential Moving Average (EMA)} is defined as:
+
+\begin{equation}
+\mathrm{EMA}_t^S = \alpha_S P_t^{c} + (1 - \alpha_S) \mathrm{EMA}_{t-1}^S
+\end{equation}
+
+\noindent Similarly, the \textbf{Long-Term Exponential Moving Average (EMA)} is given by:
+
+\begin{equation}
+\mathrm{EMA}_t^L = \alpha_L P_t^{c} + (1 - \alpha_L) \mathrm{EMA}_{t-1}^L
+\end{equation}
+
+where:
+
+\begin{itemize}
+    \item $\mathrm{EMA}_t^S$ : Short-Term Exponential Moving Average at time $t$.
+    \item $\mathrm{EMA}_t^L$ : Long-Term Exponential Moving Average at time $t$.
+    \item $P_t^{c}$ : Closing price of the asset at time $t$.
+    \item $\alpha_S$ : Smoothing factor for the short EMA, defined as $\alpha_S = \frac{2}{N_S + 1}$, where $N_S$ is the period of the short EMA.
+    \item $\alpha_L$ : Smoothing factor for the long EMA, defined as $\alpha_L = \frac{2}{N_L + 1}$, where $N_L$ is the period of the long EMA.
+    \item $\mathrm{EMA}_{t-1}^S$ : Previous value of the short-term EMA.
+    \item $\mathrm{EMA}_{t-1}^L$ : Previous value of the long-term EMA.
+\end{itemize}
+
+\noindent The \textbf{Moving Average Convergence Divergence (MACD)} is computed as:
+
+\begin{equation}
+\mathrm{MACD}_t = \mathrm{EMA}_t^S - \mathrm{EMA}_t^L
+\end{equation}
+
+The MACD provides a measure of momentum by indicating the relationship between the short-term and long-term EMAs. A positive MACD suggests an uptrend, while a negative MACD indicates a downtrend.
+
+\section{Strategy}
+
+\begin{itemize}
+	\item Go long at time $t+1$ if $MACD_t > 0$ and $MACD_{t-1} < 0$
+	\item Go short at time $t+1$ if $MACD_t < 0$ and $MACD_{t-1} > 0$
+\end{itemize}
+
+\end{document}
