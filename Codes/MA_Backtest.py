@@ -1109,7 +1109,7 @@ class BuyAndHold(Base_Functions):
 
         pnl = float(0)
         
-        nb_days = df_date.height
+        nb_days = 0
 
         average_return, sd = self.return_sd_buy_hold(df_date)
 
